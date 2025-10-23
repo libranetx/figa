@@ -15,13 +15,13 @@ export async function POST(request: NextRequest) {
 
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
-      where: { email }
+      where: { email: email.toLowerCase() }
     });
 
     if (existingUser) {
       return NextResponse.json(
-        { error: 'Email already exists' },
-        { status: 400 }
+        { error: 'User with this email already exists' },
+        { status: 409 }
       );
     }
 
@@ -29,18 +29,20 @@ export async function POST(request: NextRequest) {
     const result = await sendOTP(email);
 
     if (!result.success) {
+      // Return 400 for client errors, 500 for server errors
+      const status = result.message.includes('configured') ? 500 : 400;
       return NextResponse.json(
         { error: result.message },
-        { status: 500 }
+        { status }
       );
     }
 
     return NextResponse.json({
       success: true,
-      message: 'OTP sent successfully'
+      message: result.message
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error in send-otp API:', error);
     return NextResponse.json(
       { error: 'Internal server error' },

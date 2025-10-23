@@ -3,66 +3,64 @@ import { prisma } from '@/prisma/client';
 import crypto from 'crypto';
 import validator from 'validator';
 
-// Validate environment variables on startup
-function validateEnvironment() {
-  const required = ['EMAIL_USER', 'EMAIL_PASSWORD'];
-  const missing = required.filter(key => !process.env[key]);
-  
-  if (missing.length > 0) {
-    // Don't throw during module import/build (Next.js may build without runtime secrets).
-    // Log a warning and return false so callers can decide how to proceed at runtime.
-    console.warn(`Missing environment variables for email: ${missing.join(', ')}`);
-    return false;
-  }
+// Vercel environment variables
+const EMAIL_USER = process.env.EMAIL_USER;
+const EMAIL_PASSWORD = process.env.EMAIL_PASSWORD;
+const VERCEL_ENV = process.env.VERCEL_ENV || 'development';
 
-  return true;
-}
+// Check if email is configured
+const isEmailConfigured = !!(EMAIL_USER && EMAIL_PASSWORD);
 
-// Check whether email is configured. We intentionally do NOT throw here because
-// Next.js builds may run in environments where runtime secrets are not available.
-const EMAIL_CONFIGURED = validateEnvironment();
-
-// Email transporter (only created when configuration is present)
+// Create transporter only if credentials are available
 let transporter: nodemailer.Transporter | null = null;
-if (EMAIL_CONFIGURED) {
+
+if (isEmailConfigured) {
   transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASSWORD,
+      user: EMAIL_USER,
+      pass: EMAIL_PASSWORD,
     },
+    // Optimized for Vercel serverless functions
     pool: true,
-    maxConnections: 5,
+    maxConnections: 1,
+    maxMessages: 5,
   });
 
-  // Test email connection
-  transporter.verify((error) => {
-    if (error) {
-      console.error('Email configuration error:', error);
-    } else {
-      console.log('Email server is ready');
-    }
+  // Test connection (but don't block startup)
+  transporter.verify().then(() => {
+    console.log('✅ Email server is ready');
+  }).catch((error) => {
+    console.error('❌ Email configuration error:', error.message);
   });
+} else {
+  console.warn('⚠️ Email not configured - check Vercel environment variables');
 }
 
-// Generate a 6-digit OTP
 export function generateOTP(): string {
-  // crypto.randomInt(min, max) generates an integer in the range [min, max)
-  // so the upper bound is exclusive. To include 999999 we must use 1000000.
   return crypto.randomInt(100000, 1000000).toString();
 }
 
-// Send OTP via email
 export async function sendOTP(email: string): Promise<{ success: boolean; message: string }> {
   try {
+    console.log(`📧 OTP request for: ${email} (Environment: ${VERCEL_ENV})`);
+    
     // Validate email
     if (!email || !validator.isEmail(email)) {
       return { success: false, message: 'Invalid email address' };
     }
 
-    if (!EMAIL_CONFIGURED || !transporter) {
-      // Fail gracefully when email transport isn't configured (useful during build/test)
-      return { success: false, message: 'Email service not configured' };
+    // Check email configuration
+    if (!isEmailConfigured || !transporter) {
+      const missingVars = [];
+      if (!EMAIL_USER) missingVars.push('EMAIL_USER');
+      if (!EMAIL_PASSWORD) missingVars.push('EMAIL_PASSWORD');
+      
+      console.error(`❌ Email not configured. Missing: ${missingVars.join(', ')}`);
+      return { 
+        success: false, 
+        message: 'Email service is temporarily unavailable. Please try again later.' 
+      };
     }
 
     const normalizedEmail = email.toLowerCase().trim();
@@ -86,14 +84,14 @@ export async function sendOTP(email: string): Promise<{ success: boolean; messag
 
     // Generate OTP
     const otpCode = generateOTP();
-    
-    // Set expiration time (10 minutes from now)
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
     
-    // Clean up any expired OTPs first
+    console.log(`🔑 Generated OTP for ${normalizedEmail}: ${otpCode}`);
+    
+    // Clean up expired OTPs
     await cleanupExpiredOTPs();
     
-    // Delete any existing unused OTPs for this email
+    // Delete existing unused OTPs
     await prisma.oTPVerification.deleteMany({
       where: { 
         email: normalizedEmail,
@@ -101,8 +99,8 @@ export async function sendOTP(email: string): Promise<{ success: boolean; messag
       }
     });
     
-    // Store OTP in database first
-    const otpRecord = await prisma.oTPVerification.create({
+    // Store OTP in database
+    await prisma.oTPVerification.create({
       data: {
         email: normalizedEmail,
         otp_code: otpCode,
@@ -110,9 +108,12 @@ export async function sendOTP(email: string): Promise<{ success: boolean; messag
       }
     });
     
-    // Email content
+    // Email configuration
     const mailOptions = {
-      from: process.env.EMAIL_USER,
+      from: {
+        name: 'FIGA Care',
+        address: EMAIL_USER!
+      },
       to: normalizedEmail,
       subject: 'FIGA Care - Email Verification Code',
       html: `
@@ -149,19 +150,25 @@ export async function sendOTP(email: string): Promise<{ success: boolean; messag
       `
     };
     
+    console.log('📤 Attempting to send email...');
+    
     // Send email
-  await transporter.sendMail(mailOptions);
-    console.log(`OTP sent successfully to: ${normalizedEmail}`);
+    const emailResult = await transporter.sendMail(mailOptions);
+    console.log(`✅ Email sent successfully: ${emailResult.messageId}`);
     
     return {
       success: true,
       message: 'OTP sent successfully'
     };
     
-  } catch (error) {
-    console.error('Error sending OTP:', error);
+  } catch (error: any) {
+    console.error('❌ Error sending OTP:', {
+      message: error.message,
+      code: error.code,
+      responseCode: error.responseCode
+    });
     
-    // If email failed, delete the OTP record
+    // Clean up on failure
     if (email) {
       try {
         await prisma.oTPVerification.deleteMany({
@@ -175,14 +182,24 @@ export async function sendOTP(email: string): Promise<{ success: boolean; messag
       }
     }
     
+    // Provide specific error messages
+    let errorMessage = 'Failed to send OTP. Please try again.';
+    
+    if (error.code === 'EAUTH') {
+      errorMessage = 'Email authentication failed. Please check email configuration.';
+    } else if (error.code === 'ECONNECTION') {
+      errorMessage = 'Cannot connect to email service. Please try again.';
+    } else if (error.responseCode === 535) {
+      errorMessage = 'Email authentication failed. Please check your email password.';
+    }
+    
     return {
       success: false,
-      message: 'Failed to send OTP. Please try again.'
+      message: errorMessage
     };
   }
 }
 
-// Verify OTP
 export async function verifyOTP(email: string, otpCode: string): Promise<{ success: boolean; message: string }> {
   try {
     // Validate inputs
@@ -242,7 +259,7 @@ export async function verifyOTP(email: string, otpCode: string): Promise<{ succe
       data: { is_used: true }
     });
 
-    console.log(`OTP verified successfully for: ${normalizedEmail}`);
+    console.log(`✅ OTP verified successfully for: ${normalizedEmail}`);
     
     return {
       success: true,
@@ -250,7 +267,7 @@ export async function verifyOTP(email: string, otpCode: string): Promise<{ succe
     };
     
   } catch (error) {
-    console.error('Error verifying OTP:', error);
+    console.error('❌ Error verifying OTP:', error);
     return {
       success: false,
       message: 'Failed to verify OTP. Please try again.'
@@ -258,7 +275,6 @@ export async function verifyOTP(email: string, otpCode: string): Promise<{ succe
   }
 }
 
-// Clean up expired OTPs
 export async function cleanupExpiredOTPs(): Promise<void> {
   try {
     const result = await prisma.oTPVerification.deleteMany({
@@ -276,14 +292,13 @@ export async function cleanupExpiredOTPs(): Promise<void> {
     });
     
     if (result.count > 0) {
-      console.log(`Cleaned up ${result.count} expired OTP records`);
+      console.log(`🧹 Cleaned up ${result.count} expired OTP records`);
     }
   } catch (error) {
     console.error('Error cleaning up expired OTPs:', error);
   }
 }
 
-// Optional: Resend OTP
 export async function resendOTP(email: string): Promise<{ success: boolean; message: string }> {
   try {
     // Clean up any existing unused OTPs
