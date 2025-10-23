@@ -1,0 +1,178 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  // directUrl = env("DIRECT_URL") 
+}
+
+enum Role {
+  EMPLOYER
+  EMPLOYEE
+  STAFF
+  ADMIN
+}
+
+model User {
+  id                            String               @id @default(cuid())
+  fullname                      String
+  email                         String               @unique
+  password                      String
+  role                          Role
+  phone                         String?
+  is_active                     Boolean              @default(true)
+  created_at                    DateTime             @default(now())
+  updated_at                    DateTime             @updatedAt
+  Job                           Job[]
+  Application                   Application[]
+  Portfolio                     Portfolio[]
+  messagesSent                  Message[]            @relation("MessagesFrom")
+  messagesReceived              Message[]            @relation("MessagesTo")
+  forwardedCandidatesAsEmployer ForwardedCandidate[] @relation("ForwardedEmployer")
+}
+
+model Job {
+  id                         Int         @id @default(autoincrement())
+  employer_id                String
+  title                      String
+  location                   String
+  schedule_start             DateTime
+  schedule_end               DateTime
+  shift_type                 String
+  gender_preference          String?
+  driving_license_required   Boolean     @default(false)
+  language_level_requirement String?
+  job_requirements           String?
+  description                String
+  status                     JobStatus   @default(PENDING)
+  posted_at                  DateTime    @default(now())
+  updated_at                 DateTime    @updatedAt
+  deadline                   DateTime?
+  reviewed_by                String?
+  reviewed_at                DateTime?
+  is_reviewed                Boolean     @default(false)
+  job_urgency                JobUrgency?
+
+  // Relations
+  employer            User                 @relation(fields: [employer_id], references: [id])
+  Application         Application[]
+  messages            Message[]
+  forwardedCandidates ForwardedCandidate[] @relation("ForwardedJob")
+}
+
+enum JobStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  COMPLETED
+  CANCELLED
+}
+
+enum JobUrgency {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+model Application {
+  id           Int               @id @default(autoincrement())
+  job_id       Int
+  employee_id  String
+  portfolio_id Int
+  applied_at   DateTime          @default(now())
+  cover_letter String?
+  status       ApplicationStatus @default(PENDING)
+  reviewed_by  String?
+  reviewed_at  DateTime?
+  note         String?
+  is_reviewed  Boolean           @default(false)
+
+  // Relations
+  job              Job                  @relation(fields: [job_id], references: [id])
+  employee         User                 @relation(fields: [employee_id], references: [id])
+  portfolio        Portfolio            @relation(fields: [portfolio_id], references: [id])
+  messages         Message[]
+  forwardedEntries ForwardedCandidate[] @relation("ForwardedApplication")
+}
+
+enum ApplicationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model Portfolio {
+  id                            Int       @id @default(autoincrement())
+  user_id                       String
+  sex                           String
+  age                           Int
+  certifications                String? // nullable if not everyone has certifications
+  experience                    String?
+  state_where_experience_gained String?
+  suitable_work_days            String?
+  suitable_work_shift           String?
+  comfortability                String
+  university_college            String?
+  study_field                   String?
+  degree                        String?
+  english_skill                 String
+  us_living_years               Int?
+  driving_details               String?
+  authorized_to_work            String?
+  currently_employed            String?
+  reason_left_previous_job      String?
+  job_type_preference           String?
+  is_verified                   Boolean   @default(false)
+  verified_by                   String?
+  verified_at                   DateTime?
+  created_at                    DateTime  @default(now())
+  updated_at                    DateTime  @updatedAt
+  profile_image                 String?
+
+  // Relations
+  user        User          @relation(fields: [user_id], references: [id])
+  Application Application[]
+}
+
+model Message {
+  id             Int       @id @default(autoincrement())
+  to_user_id     String
+  from_user_id   String
+  subject        String?
+  body           String
+  created_at     DateTime  @default(now())
+  read_at        DateTime?
+  job_id         Int?
+  application_id Int?
+
+  // Relations
+  to_user     User         @relation("MessagesTo", fields: [to_user_id], references: [id])
+  from_user   User         @relation("MessagesFrom", fields: [from_user_id], references: [id])
+  job         Job?         @relation(fields: [job_id], references: [id])
+  application Application? @relation(fields: [application_id], references: [id])
+}
+
+// Tracks which candidates (applications) were forwarded by staff to a specific employer for a job
+model ForwardedCandidate {
+  id             Int      @id @default(autoincrement())
+  job_id         Int
+  employer_id    String
+  application_id Int
+  created_at     DateTime @default(now())
+
+  // Relations
+  job         Job         @relation("ForwardedJob", fields: [job_id], references: [id])
+  employer    User        @relation("ForwardedEmployer", fields: [employer_id], references: [id])
+  application Application @relation("ForwardedApplication", fields: [application_id], references: [id])
+
+  @@unique([job_id, application_id])
+}
