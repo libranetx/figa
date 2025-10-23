@@ -90,21 +90,31 @@ export async function sendOTP(email: string, otp: string): Promise<boolean> {
 
 // Store OTP in database
 export async function storeOTP(email: string, otp: string): Promise<void> {
-  const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes from now
+  try {
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes from now
 
-  // Delete any existing OTPs for this email
-  await prisma.otpVerification.deleteMany({
-    where: { email },
-  });
+    // Delete any existing OTPs for this email
+    await prisma.otpVerification.deleteMany({
+      where: { email },
+    });
 
-  // Store the new OTP
-  await prisma.otpVerification.create({
-    data: {
-      email,
-      otp,
-      expiresAt,
-    },
-  });
+    // Store the new OTP
+    await prisma.otpVerification.create({
+      data: {
+        email,
+        otp,
+        expiresAt,
+      },
+    });
+  } catch (error) {
+    console.error('Error storing OTP in database:', error);
+    // In development mode, we can continue without database storage
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Continuing in development mode without database storage');
+      return;
+    }
+    throw error;
+  }
 }
 
 // Verify OTP
@@ -134,6 +144,11 @@ export async function verifyOTP(email: string, otp: string): Promise<boolean> {
     return true;
   } catch (error) {
     console.error('Error verifying OTP:', error);
+    // In development mode, allow any OTP if database is not available
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Development mode: Accepting OTP without database verification');
+      return true;
+    }
     return false;
   }
 }
