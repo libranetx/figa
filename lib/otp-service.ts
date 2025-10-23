@@ -9,31 +9,41 @@ function validateEnvironment() {
   const missing = required.filter(key => !process.env[key]);
   
   if (missing.length > 0) {
-    throw new Error(`Missing environment variables: ${missing.join(', ')}`);
+    // Don't throw during module import/build (Next.js may build without runtime secrets).
+    // Log a warning and return false so callers can decide how to proceed at runtime.
+    console.warn(`Missing environment variables for email: ${missing.join(', ')}`);
+    return false;
   }
+
+  return true;
 }
 
-validateEnvironment();
+// Check whether email is configured. We intentionally do NOT throw here because
+// Next.js builds may run in environments where runtime secrets are not available.
+const EMAIL_CONFIGURED = validateEnvironment();
 
-// Email transporter configuration with better error handling
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASSWORD,
-  },
-  pool: true,
-  maxConnections: 5,
-});
+// Email transporter (only created when configuration is present)
+let transporter: nodemailer.Transporter | null = null;
+if (EMAIL_CONFIGURED) {
+  transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASSWORD,
+    },
+    pool: true,
+    maxConnections: 5,
+  });
 
-// Test email connection
-transporter.verify((error) => {
-  if (error) {
-    console.error('Email configuration error:', error);
-  } else {
-    console.log('Email server is ready');
-  }
-});
+  // Test email connection
+  transporter.verify((error) => {
+    if (error) {
+      console.error('Email configuration error:', error);
+    } else {
+      console.log('Email server is ready');
+    }
+  });
+}
 
 // Generate a 6-digit OTP
 export function generateOTP(): string {
@@ -48,6 +58,11 @@ export async function sendOTP(email: string): Promise<{ success: boolean; messag
     // Validate email
     if (!email || !validator.isEmail(email)) {
       return { success: false, message: 'Invalid email address' };
+    }
+
+    if (!EMAIL_CONFIGURED || !transporter) {
+      // Fail gracefully when email transport isn't configured (useful during build/test)
+      return { success: false, message: 'Email service not configured' };
     }
 
     const normalizedEmail = email.toLowerCase().trim();
@@ -135,7 +150,7 @@ export async function sendOTP(email: string): Promise<{ success: boolean; messag
     };
     
     // Send email
-    await transporter.sendMail(mailOptions);
+  await transporter.sendMail(mailOptions);
     console.log(`OTP sent successfully to: ${normalizedEmail}`);
     
     return {
