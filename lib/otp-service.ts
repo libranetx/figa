@@ -1,39 +1,95 @@
 import nodemailer from 'nodemailer';
 import { prisma } from '@/prisma/client';
 import crypto from 'crypto';
+import validator from 'validator';
 
-// Email transporter configuration
+// Validate environment variables on startup
+function validateEnvironment() {
+  const required = ['EMAIL_USER', 'EMAIL_PASSWORD'];
+  const missing = required.filter(key => !process.env[key]);
+  
+  if (missing.length > 0) {
+    throw new Error(`Missing environment variables: ${missing.join(', ')}`);
+  }
+}
+
+validateEnvironment();
+
+// Email transporter configuration with better error handling
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASSWORD,
   },
+  pool: true,
+  maxConnections: 5,
+});
+
+// Test email connection
+transporter.verify((error) => {
+  if (error) {
+    console.error('Email configuration error:', error);
+  } else {
+    console.log('Email server is ready');
+  }
 });
 
 // Generate a 6-digit OTP
 export function generateOTP(): string {
-  return crypto.randomInt(100000, 999999).toString();
+  // crypto.randomInt(min, max) generates an integer in the range [min, max)
+  // so the upper bound is exclusive. To include 999999 we must use 1000000.
+  return crypto.randomInt(100000, 1000000).toString();
 }
 
 // Send OTP via email
 export async function sendOTP(email: string): Promise<{ success: boolean; message: string }> {
   try {
+    // Validate email
+    if (!email || !validator.isEmail(email)) {
+      return { success: false, message: 'Invalid email address' };
+    }
+
+    const normalizedEmail = email.toLowerCase().trim();
+
+    // Check for recent OTP requests (prevent spam)
+    const recentOTPCount = await prisma.oTPVerification.count({
+      where: {
+        email: normalizedEmail,
+        created_at: {
+          gte: new Date(Date.now() - 1 * 60 * 1000) // Last 1 minute
+        }
+      }
+    });
+
+    if (recentOTPCount > 0) {
+      return { 
+        success: false, 
+        message: 'Please wait before requesting a new OTP' 
+      };
+    }
+
     // Generate OTP
     const otpCode = generateOTP();
     
     // Set expiration time (10 minutes from now)
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
     
-    // Delete any existing OTP for this email
-    await prisma.otpVerification.deleteMany({
-      where: { email }
+    // Clean up any expired OTPs first
+    await cleanupExpiredOTPs();
+    
+    // Delete any existing unused OTPs for this email
+    await prisma.oTPVerification.deleteMany({
+      where: { 
+        email: normalizedEmail,
+        is_used: false 
+      }
     });
     
-    // Store OTP in database
-    await prisma.otpVerification.create({
+    // Store OTP in database first
+    const otpRecord = await prisma.oTPVerification.create({
       data: {
-        email,
+        email: normalizedEmail,
         otp_code: otpCode,
         expires_at: expiresAt,
       }
@@ -42,7 +98,7 @@ export async function sendOTP(email: string): Promise<{ success: boolean; messag
     // Email content
     const mailOptions = {
       from: process.env.EMAIL_USER,
-      to: email,
+      to: normalizedEmail,
       subject: 'FIGA Care - Email Verification Code',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
@@ -80,6 +136,7 @@ export async function sendOTP(email: string): Promise<{ success: boolean; messag
     
     // Send email
     await transporter.sendMail(mailOptions);
+    console.log(`OTP sent successfully to: ${normalizedEmail}`);
     
     return {
       success: true,
@@ -88,9 +145,24 @@ export async function sendOTP(email: string): Promise<{ success: boolean; messag
     
   } catch (error) {
     console.error('Error sending OTP:', error);
+    
+    // If email failed, delete the OTP record
+    if (email) {
+      try {
+        await prisma.oTPVerification.deleteMany({
+          where: { 
+            email: email.toLowerCase().trim(),
+            is_used: false 
+          }
+        });
+      } catch (deleteError) {
+        console.error('Error cleaning up failed OTP:', deleteError);
+      }
+    }
+    
     return {
       success: false,
-      message: 'Failed to send OTP'
+      message: 'Failed to send OTP. Please try again.'
     };
   }
 }
@@ -98,11 +170,43 @@ export async function sendOTP(email: string): Promise<{ success: boolean; messag
 // Verify OTP
 export async function verifyOTP(email: string, otpCode: string): Promise<{ success: boolean; message: string }> {
   try {
-    // Find the OTP record
-    const otpRecord = await prisma.otpVerification.findFirst({
+    // Validate inputs
+    if (!email || !validator.isEmail(email)) {
+      return { success: false, message: 'Invalid email address' };
+    }
+
+    if (!otpCode || otpCode.length !== 6 || !/^\d+$/.test(otpCode)) {
+      return { success: false, message: 'Invalid OTP format' };
+    }
+
+    const normalizedEmail = email.toLowerCase().trim();
+    const normalizedOTP = otpCode.trim();
+
+    // Clean up expired OTPs first
+    await cleanupExpiredOTPs();
+
+    // Check for too many attempts
+    const recentAttempts = await prisma.oTPVerification.count({
       where: {
-        email,
-        otp_code: otpCode,
+        email: normalizedEmail,
+        created_at: {
+          gte: new Date(Date.now() - 15 * 60 * 1000) // Last 15 minutes
+        }
+      }
+    });
+
+    if (recentAttempts > 10) {
+      return { 
+        success: false, 
+        message: 'Too many verification attempts. Please request a new OTP.' 
+      };
+    }
+
+    // Find the OTP record
+    const otpRecord = await prisma.oTPVerification.findFirst({
+      where: {
+        email: normalizedEmail,
+        otp_code: normalizedOTP,
         is_used: false,
         expires_at: {
           gt: new Date() // Not expired
@@ -118,10 +222,12 @@ export async function verifyOTP(email: string, otpCode: string): Promise<{ succe
     }
     
     // Mark OTP as used
-    await prisma.otpVerification.update({
+    await prisma.oTPVerification.update({
       where: { id: otpRecord.id },
       data: { is_used: true }
     });
+
+    console.log(`OTP verified successfully for: ${normalizedEmail}`);
     
     return {
       success: true,
@@ -132,22 +238,54 @@ export async function verifyOTP(email: string, otpCode: string): Promise<{ succe
     console.error('Error verifying OTP:', error);
     return {
       success: false,
-      message: 'Failed to verify OTP'
+      message: 'Failed to verify OTP. Please try again.'
     };
   }
 }
 
-// Clean up expired OTPs (can be called periodically)
+// Clean up expired OTPs
 export async function cleanupExpiredOTPs(): Promise<void> {
   try {
-    await prisma.otpVerification.deleteMany({
+    const result = await prisma.oTPVerification.deleteMany({
       where: {
-        expires_at: {
-          lt: new Date()
-        }
+        OR: [
+          { expires_at: { lt: new Date() } },
+          { 
+            AND: [
+              { is_used: true },
+              { created_at: { lt: new Date(Date.now() - 24 * 60 * 60 * 1000) } } // Older than 24 hours
+            ]
+          }
+        ]
       }
     });
+    
+    if (result.count > 0) {
+      console.log(`Cleaned up ${result.count} expired OTP records`);
+    }
   } catch (error) {
     console.error('Error cleaning up expired OTPs:', error);
+  }
+}
+
+// Optional: Resend OTP
+export async function resendOTP(email: string): Promise<{ success: boolean; message: string }> {
+  try {
+    // Clean up any existing unused OTPs
+    await prisma.oTPVerification.deleteMany({
+      where: { 
+        email: email.toLowerCase().trim(),
+        is_used: false 
+      }
+    });
+    
+    // Send new OTP
+    return await sendOTP(email);
+  } catch (error) {
+    console.error('Error resending OTP:', error);
+    return {
+      success: false,
+      message: 'Failed to resend OTP'
+    };
   }
 }
