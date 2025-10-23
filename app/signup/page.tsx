@@ -85,13 +85,20 @@ export default function SignUpPage() {
 
       if (!res.ok) {
         const err = await res.json();
-        throw new Error(err.error || "Failed to sign up");
+        throw new Error(err.error || "Failed to send verification email");
       }
 
-      toast.success("Account created successfully!", {
+      const result = await res.json();
+      
+      // Store user data temporarily in sessionStorage for OTP verification
+      sessionStorage.setItem('pendingUserData', JSON.stringify(result.userData));
+
+      toast.success("Verification email sent! Please check your inbox.", {
         position: "top-center",
       });
-      router.push("/signin");
+      
+      // Redirect to OTP verification page
+      router.push(`/verify-otp?email=${encodeURIComponent(data.email)}`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Unexpected error", {
         position: "top-center",

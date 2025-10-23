@@ -176,3 +176,15 @@ model ForwardedCandidate {
 
   @@unique([job_id, application_id])
 }
+
+model OtpVerification {
+  id         String   @id @default(cuid())
+  email      String
+  otp_code   String
+  expires_at DateTime
+  is_used    Boolean  @default(false)
+  created_at DateTime @default(now())
+
+  @@index([email])
+  @@index([otp_code])
+}
