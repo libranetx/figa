@@ -29,7 +29,6 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "react-hot-toast";
 import * as z from "zod";
-import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 
 const formSchema = z
   .object({
@@ -62,10 +61,6 @@ export default function SignUpPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [step, setStep] = useState<'form' | 'otp'>('form');
-  const [otp, setOtp] = useState('');
-  const [isSendingOTP, setIsSendingOTP] = useState(false);
-  const [isVerifyingOTP, setIsVerifyingOTP] = useState(false);
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -80,58 +75,29 @@ export default function SignUpPage() {
   });
 
   const onSubmit = async (data: FormData) => {
-    if (step === 'form') {
-      // First step: Send OTP
-      setIsSendingOTP(true);
-      try {
-        const res = await fetch("/api/auth/send-otp", {
-          method: "POST",
-          body: JSON.stringify({ email: data.email }),
-          headers: { "Content-Type": "application/json" },
-        });
+    setIsLoading(true);
+    try {
+      const res = await fetch("/api/auth/signup", {
+        method: "POST",
+        body: JSON.stringify(data),
+        headers: { "Content-Type": "application/json" },
+      });
 
-        if (!res.ok) {
-          const err = await res.json();
-          throw new Error(err.error || "Failed to send verification code");
-        }
-
-        toast.success("Verification code sent to your email!", {
-          position: "top-center",
-        });
-        setStep('otp');
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : "Unexpected error", {
-          position: "top-center",
-        });
-      } finally {
-        setIsSendingOTP(false);
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Failed to sign up");
       }
-    } else {
-      // Second step: Verify OTP and create account
-      setIsVerifyingOTP(true);
-      try {
-        const res = await fetch("/api/auth/signup", {
-          method: "POST",
-          body: JSON.stringify({ ...data, otp }),
-          headers: { "Content-Type": "application/json" },
-        });
 
-        if (!res.ok) {
-          const err = await res.json();
-          throw new Error(err.error || "Failed to sign up");
-        }
-
-        toast.success("Account created successfully!", {
-          position: "top-center",
-        });
-        router.push("/signin");
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : "Unexpected error", {
-          position: "top-center",
-        });
-      } finally {
-        setIsVerifyingOTP(false);
-      }
+      toast.success("Account created successfully!", {
+        position: "top-center",
+      });
+      router.push("/signin");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Unexpected error", {
+        position: "top-center",
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -230,53 +196,14 @@ export default function SignUpPage() {
                 >
                   <div>
                     <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">
-                      {step === 'form' ? 'Sign Up' : 'Verify Email'}
+                      Sign Up
                     </h1>
                     <p className="text-slate-600 mt-1">
-                      {step === 'form' 
-                        ? 'Join FIGA Care to get started' 
-                        : 'Enter the verification code sent to your email'
-                      }
+                      Join FIGA Care to get started
                     </p>
                   </div>
 
-                  {step === 'otp' && (
-                    <div className="space-y-4">
-                      <div className="text-center">
-                        <p className="text-sm text-slate-600 mb-4">
-                          We sent a 6-digit code to <strong>{form.getValues('email')}</strong>
-                        </p>
-                        <InputOTP
-                          maxLength={6}
-                          value={otp}
-                          onChange={setOtp}
-                        >
-                          <InputOTPGroup>
-                            <InputOTPSlot index={0} />
-                            <InputOTPSlot index={1} />
-                            <InputOTPSlot index={2} />
-                            <InputOTPSlot index={3} />
-                            <InputOTPSlot index={4} />
-                            <InputOTPSlot index={5} />
-                          </InputOTPGroup>
-                        </InputOTP>
-                      </div>
-                      
-                      <div className="text-center">
-                        <button
-                          type="button"
-                          onClick={() => setStep('form')}
-                          className="text-sm text-blue-600 hover:text-blue-500 underline"
-                        >
-                          Change email address
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {step === 'form' && (
-                    <>
-                      {/* Role Selection */}
+                  {/* Role Selection */}
                   <FormField
                     control={form.control}
                     name="role"
@@ -498,19 +425,13 @@ export default function SignUpPage() {
                     )}
                   />
 
-                    </>
-                  )}
-
                   {/* Submit Button */}
                   <Button
                     type="submit"
-                    disabled={step === 'form' ? isSendingOTP : isVerifyingOTP || otp.length !== 6}
+                    disabled={isLoading}
                     className="w-full h-11 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-xl shadow-lg hover:shadow-xl"
                   >
-                    {step === 'form' 
-                      ? (isSendingOTP ? "Sending Code..." : "Send Verification Code")
-                      : (isVerifyingOTP ? "Creating Account..." : "Verify & Create Account")
-                    }
+                    {isLoading ? "Creating Account..." : "Create Account"}
                   </Button>
 
                   <div className="text-center text-sm text-gray-600">
