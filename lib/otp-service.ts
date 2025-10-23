@@ -10,6 +10,11 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+// Fallback for development/testing when email is not configured
+const isEmailConfigured = () => {
+  return process.env.EMAIL_USER && process.env.EMAIL_PASS;
+};
+
 // Generate a 6-digit OTP
 export function generateOTP(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
@@ -18,6 +23,18 @@ export function generateOTP(): string {
 // Send OTP via email
 export async function sendOTP(email: string, otp: string): Promise<boolean> {
   try {
+    // Check if email configuration is available
+    if (!isEmailConfigured()) {
+      console.log('Email not configured. Using development mode - OTP will be logged to console.');
+      console.log(`📧 OTP for ${email}: ${otp}`);
+      console.log('To enable email sending, set EMAIL_USER and EMAIL_PASS environment variables.');
+      return true; // Return true for development mode
+    }
+
+    // Verify transporter configuration
+    await transporter.verify();
+    console.log('Email transporter verified successfully');
+
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: email,
@@ -56,10 +73,17 @@ export async function sendOTP(email: string, otp: string): Promise<boolean> {
       `,
     };
 
-    await transporter.sendMail(mailOptions);
+    const result = await transporter.sendMail(mailOptions);
+    console.log('Email sent successfully:', result.messageId);
     return true;
   } catch (error) {
     console.error('Error sending OTP email:', error);
+    if (error instanceof Error) {
+      console.error('Error details:', {
+        message: error.message,
+        stack: error.stack,
+      });
+    }
     return false;
   }
 }
