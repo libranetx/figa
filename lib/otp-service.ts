@@ -41,7 +41,7 @@ export function generateOTP(): string {
   return crypto.randomInt(100000, 1000000).toString();
 }
 
-export async function sendOTP(email: string): Promise<{ success: boolean; message: string }> {
+export async function sendOTP(email: string, purpose: 'verify' | 'reset' = 'verify'): Promise<{ success: boolean; message: string }> {
   try {
     console.log(`📧 OTP request for: ${email} (Environment: ${VERCEL_ENV})`);
     
@@ -84,7 +84,8 @@ export async function sendOTP(email: string): Promise<{ success: boolean; messag
 
     // Generate OTP
     const otpCode = generateOTP();
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+  // Shorten OTP lifetime to 1 minute
+  const expiresAt = new Date(Date.now() + 1 * 60 * 1000);
     
     console.log(`🔑 Generated OTP for ${normalizedEmail}: ${otpCode}`);
     
@@ -109,13 +110,22 @@ export async function sendOTP(email: string): Promise<{ success: boolean; messag
     });
     
     // Email configuration
+    // Different email templates depending on purpose
+    const subject = purpose === 'reset'
+      ? 'FIGA Care - Password Reset Code'
+      : 'FIGA Care - Email Verification Code';
+
+    const intro = purpose === 'reset'
+      ? 'You requested to reset your FIGA Care password. Use the code below to continue and set a new password.'
+      : 'To complete your account setup, please use the verification code below:';
+
     const mailOptions = {
       from: {
         name: 'FIGA Care',
         address: EMAIL_USER!
       },
       to: normalizedEmail,
-      subject: 'FIGA Care - Email Verification Code',
+      subject,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <div style="background: linear-gradient(135deg, #3b82f6, #1d4ed8); padding: 30px; border-radius: 10px; text-align: center;">
@@ -124,9 +134,9 @@ export async function sendOTP(email: string): Promise<{ success: boolean; messag
           </div>
           
           <div style="background: white; padding: 30px; border-radius: 10px; margin-top: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
-            <h2 style="color: #1f2937; margin: 0 0 20px 0;">Email Verification</h2>
+            <h2 style="color: #1f2937; margin: 0 0 20px 0;">${purpose === 'reset' ? 'Password Reset' : 'Email Verification'}</h2>
             <p style="color: #6b7280; line-height: 1.6; margin: 0 0 20px 0;">
-              Thank you for registering with FIGA Care! To complete your account setup, please use the verification code below:
+              ${intro}
             </p>
             
             <div style="background: #f3f4f6; padding: 20px; border-radius: 8px; text-align: center; margin: 20px 0;">
@@ -136,7 +146,7 @@ export async function sendOTP(email: string): Promise<{ success: boolean; messag
             </div>
             
             <p style="color: #6b7280; line-height: 1.6; margin: 20px 0 0 0;">
-              This code will expire in <strong>10 minutes</strong>. If you didn't request this verification, please ignore this email.
+              This code will expire in <strong>1 minute</strong>. If you didn't request this, please ignore this email or contact support.
             </p>
             
             <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">

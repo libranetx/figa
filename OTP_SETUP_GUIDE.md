@@ -64,4 +64,4 @@ To test the OTP functionality:
 - Never commit your email credentials to version control
 - Use app passwords instead of regular passwords
 - Consider using a dedicated email service like SendGrid or Mailgun for production
-- OTP codes expire after 10 minutes for security
+- OTP codes expire after 1 minute for security

@@ -17,7 +17,7 @@ export default function VerifyOTPPage() {
   const [otp, setOtp] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isResending, setIsResending] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(600); // 10 minutes in seconds
+  const [timeLeft, setTimeLeft] = useState(60); // 1 minute in seconds
 
   // Countdown timer
   useEffect(() => {
@@ -123,8 +123,8 @@ export default function VerifyOTPPage() {
         position: "top-center",
       });
       
-      // Reset timer
-      setTimeLeft(600);
+  // Reset timer to 1 minute
+  setTimeLeft(60);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to resend OTP", {
         position: "top-center",
