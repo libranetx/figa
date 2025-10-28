@@ -359,7 +359,7 @@ export default function HomePage() {
         </section>
 
         {/* Testimonials */}
-        <section className="py-20 bg-gradient-to-br from-blue-50 via-white to-blue-100/30">
+        <section className="py-10 bg-gradient-to-br from-blue-50 via-white to-blue-100/30">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-16">
               <h2 className="text-4xl font-bold text-slate-900 mb-6">
@@ -423,7 +423,7 @@ export default function HomePage() {
               ].map((testimonial, index) => (
                 <Card
                   key={index}
-                  className="snap-start flex-shrink-0 w-[85%] sm:w-[60%] md:w-auto bg-white/80 backdrop-blur-sm border-0 shadow-xl hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-1 animate-fade-in-stagger"
+                  className="snap-start mb-25 flex-shrink-0 w-[85%] sm:w-[60%] md:w-auto bg-white/80 backdrop-blur-sm border-0 shadow-xl hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-1 animate-fade-in-stagger"
                   style={{ animationDelay: `${index * 0.1}s` }}
                   aria-label={`Testimonial from ${testimonial.name}`}
                 >
