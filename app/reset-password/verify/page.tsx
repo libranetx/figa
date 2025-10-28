@@ -58,7 +58,7 @@ export default function VerifyResetOTPPage() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-blue-100/50 px-4 py-8">
       <div className="w-full max-w-md">
         <div className="flex justify-center mb-6">
-          <FigaLogo size="lg" />
+          <FigaLogo size="xl" />
         </div>
 
         <div className="bg-white shadow rounded-2xl p-8">

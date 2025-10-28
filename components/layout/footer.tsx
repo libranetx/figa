@@ -23,13 +23,10 @@ export function Footer() {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {/* Company Info */}
-          <div className="space-y-6">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
-                <FigaLogo size="lg" variant="white" />
-              </div>
-              <span className="text-2xl font-bold">FIGA LLC</span>
-            </div>
+          <div className="space-y-3">
+            <Link href="/" className="flex items-center space-x-3">
+              <FigaLogo size="xl" />
+            </Link>
             <p className="text-slate-300 leading-relaxed">
               Connecting families with trusted, compassionate caregivers across
               the San Francisco Bay Area since 2020.
@@ -90,13 +87,18 @@ export function Footer() {
               aria-expanded={quickOpen}
             >
               <span>Quick Links</span>
-              <ChevronDown className={`w-4 h-4 ml-2 transition-transform duration-200 md:hidden ${quickOpen ? 'rotate-180' : ''}`} />
+              <ChevronDown
+                className={`w-4 h-4 ml-2 transition-transform duration-200 md:hidden ${
+                  quickOpen ? "rotate-180" : ""
+                }`}
+              />
             </button>
-            <ul className={`${quickOpen ? 'block' : 'hidden'} md:block space-y-3`}>
+            <ul
+              className={`${quickOpen ? "block" : "hidden"} md:block space-y-3`}
+            >
               {[
                 { href: "/about", label: "About Us" },
                 { href: "/jobs", label: "Find Jobs" },
-                { href: "/contact", label: "Contact Us" },
                 { href: "/faq", label: "FAQ" },
               ].map((link) => (
                 <li key={link.href}>
@@ -120,9 +122,17 @@ export function Footer() {
               aria-expanded={servicesOpen}
             >
               <span>Services</span>
-              <ChevronDown className={`w-4 h-4 ml-2 transition-transform duration-200 md:hidden ${servicesOpen ? 'rotate-180' : ''}`} />
+              <ChevronDown
+                className={`w-4 h-4 ml-2 transition-transform duration-200 md:hidden ${
+                  servicesOpen ? "rotate-180" : ""
+                }`}
+              />
             </button>
-            <ul className={`${servicesOpen ? 'block' : 'hidden'} md:block space-y-3`}>
+            <ul
+              className={`${
+                servicesOpen ? "block" : "hidden"
+              } md:block space-y-3`}
+            >
               {[
                 "Elder Care",
                 "Companion Care",
@@ -147,9 +157,17 @@ export function Footer() {
               aria-expanded={contactOpen}
             >
               <span>Contact Info</span>
-              <ChevronDown className={`w-4 h-4 ml-2 transition-transform duration-200 md:hidden ${contactOpen ? 'rotate-180' : ''}`} />
+              <ChevronDown
+                className={`w-4 h-4 ml-2 transition-transform duration-200 md:hidden ${
+                  contactOpen ? "rotate-180" : ""
+                }`}
+              />
             </button>
-            <div className={`${contactOpen ? 'block' : 'hidden'} md:block space-y-4`}>
+            <div
+              className={`${
+                contactOpen ? "block" : "hidden"
+              } md:block space-y-4`}
+            >
               <div className="flex items-center space-x-3">
                 <Phone className="w-5 h-5 text-blue-400" />
                 <span className="text-slate-300">(415) 555-0123</span>

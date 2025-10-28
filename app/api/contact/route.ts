@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    const to = 'tadiostsegaye7@gmail.com';
+    const to = 'tadiostsegaye7@gmail.com';//during production change to your official email
 
     const subject = `Contact form: ${firstName || ''} ${lastName || ''}`.trim();
 

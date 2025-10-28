@@ -146,7 +146,7 @@ export default function SignInPage() {
           <div className="p-6 sm:p-8 lg:p-10 pt-8 md:pt-10 lg:pt-12 flex h-full justify-center items-start overflow-y-auto">
             <div className="w-full max-w-md">
               <div className="flex items-center justify-center mb-6">
-                <FigaLogo size="lg" />
+                <FigaLogo size="xl" />
               </div>
               
 

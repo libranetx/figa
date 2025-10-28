@@ -191,22 +191,7 @@ export function Header({ variant = "default" }: HeaderProps) {
     return (
       <header className="border-b border-white/20 bg-white/80 backdrop-blur-xl supports-[backdrop-filter]:bg-white/60 sticky top-0 z-50 shadow-sm">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            {/* Logo */}
-            <div className="flex items-center space-x-3 animate-pulse">
-              <div className="w-10 h-10 bg-gray-200 rounded-xl"></div>
-              <div className="h-6 w-32 bg-gray-200 rounded-md"></div>
-            </div>
-
-            <div className="hidden md:flex items-center space-x-4">
-              <div className="h-9 w-24 bg-gray-200 rounded-md"></div>
-              <div className="h-9 w-32 bg-gray-200 rounded-md"></div>
-            </div>
-
-            <div className="md:hidden p-2">
-              <div className="w-6 h-6 bg-gray-200 rounded-lg"></div>
-            </div>
-          </div>
+   
         </div>
       </header>
     );
@@ -215,15 +200,12 @@ export function Header({ variant = "default" }: HeaderProps) {
   return (
     <header className="border-b border-white/20 bg-white/80 backdrop-blur-xl supports-[backdrop-filter]:bg-white/60 sticky top-0 z-50 shadow-sm">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center py-4">
+        <div className="flex justify-between items-center">
           {/* Logo */}
           <Link href="/" className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800 rounded-xl flex items-center justify-center shadow-lg transform hover:scale-105 transition-transform duration-200">
-              <FigaLogo size="sm" variant="white" />
-            </div>
-            <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
-              FIGA LLC
-            </span>
+           
+              <FigaLogo size="lg" />
+          
           </Link>
 
           {/* Desktop Navigation */}

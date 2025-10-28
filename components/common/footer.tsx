@@ -1,8 +1,8 @@
 "use client";
 
-import Link from "next/link"
-import { FigaLogo } from "@/components/figa-logo"
-import { Mail, Phone, MapPin, ChevronDown } from "lucide-react"
+import Link from "next/link";
+import { FigaLogo } from "@/components/figa-logo";
+import { Mail, Phone, MapPin, ChevronDown } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 
@@ -10,17 +10,19 @@ export function Footer() {
   const [servicesOpen, setServicesOpen] = useState(false);
   const [companyOpen, setCompanyOpen] = useState(false);
   const [legalOpen, setLegalOpen] = useState(false);
-  const currentYear = new Date().getFullYear()
+  const currentYear = new Date().getFullYear();
   const pathname = usePathname();
 
-  if ([
-    "@/signin",
-    "@/signup",
-    "/signout",
-    "/admin",
-    "/admin/users",
-    "/admin/todos",
-  ].includes(pathname)) {
+  if (
+    [
+      "@/signin",
+      "@/signup",
+      "/signout",
+      "/admin",
+      "/admin/users",
+      "/admin/todos",
+    ].includes(pathname)
+  ) {
     return null;
   }
 
@@ -30,9 +32,12 @@ export function Footer() {
         <div className="grid md:grid-cols-4 gap-8">
           {/* Company Info */}
           <div className="space-y-4">
-            <FigaLogo variant="white" size="lg" />
+            <Link href="/" className="flex items-center space-x-3">
+              <FigaLogo size="lg" />
+            </Link>
             <p className="text-slate-300 leading-relaxed">
-              Connecting families with trusted, compassionate caregivers across the San Francisco Bay Area.
+              Connecting families with trusted, compassionate caregivers across
+              the San Francisco Bay Area.
             </p>
             <div className="space-y-2">
               <div className="flex items-center text-slate-300">
@@ -63,26 +68,46 @@ export function Footer() {
                     aria-expanded={servicesOpen}
                   >
                     <span>Services</span>
-                    <ChevronDown className={`w-4 h-4 ml-2 transition-transform duration-200 md:hidden ${servicesOpen ? 'rotate-180' : ''}`} />
+                    <ChevronDown
+                      className={`w-4 h-4 ml-2 transition-transform duration-200 md:hidden ${
+                        servicesOpen ? "rotate-180" : ""
+                      }`}
+                    />
                   </button>
-                  <ul className={`${servicesOpen ? 'block' : 'hidden'} md:block space-y-2`}>
+                  <ul
+                    className={`${
+                      servicesOpen ? "block" : "hidden"
+                    } md:block space-y-2`}
+                  >
                     <li>
-                      <Link href="/services/elderly-care" className="text-slate-300 hover:text-white transition-colors">
+                      <Link
+                        href="/services/elderly-care"
+                        className="text-slate-300 hover:text-white transition-colors"
+                      >
                         Elderly Care
                       </Link>
                     </li>
                     <li>
-                      <Link href="/services/companion-care" className="text-slate-300 hover:text-white transition-colors">
+                      <Link
+                        href="/services/companion-care"
+                        className="text-slate-300 hover:text-white transition-colors"
+                      >
                         Companion Care
                       </Link>
                     </li>
                     <li>
-                      <Link href="/services/respite-care" className="text-slate-300 hover:text-white transition-colors">
+                      <Link
+                        href="/services/respite-care"
+                        className="text-slate-300 hover:text-white transition-colors"
+                      >
                         Respite Care
                       </Link>
                     </li>
                     <li>
-                      <Link href="/services/live-in-care" className="text-slate-300 hover:text-white transition-colors">
+                      <Link
+                        href="/services/live-in-care"
+                        className="text-slate-300 hover:text-white transition-colors"
+                      >
                         Live-in Care
                       </Link>
                     </li>
@@ -100,21 +125,38 @@ export function Footer() {
                     aria-expanded={companyOpen}
                   >
                     <span>Company</span>
-                    <ChevronDown className={`w-4 h-4 ml-2 transition-transform duration-200 md:hidden ${companyOpen ? 'rotate-180' : ''}`} />
+                    <ChevronDown
+                      className={`w-4 h-4 ml-2 transition-transform duration-200 md:hidden ${
+                        companyOpen ? "rotate-180" : ""
+                      }`}
+                    />
                   </button>
-                  <ul className={`${companyOpen ? 'block' : 'hidden'} md:block space-y-2`}>
+                  <ul
+                    className={`${
+                      companyOpen ? "block" : "hidden"
+                    } md:block space-y-2`}
+                  >
                     <li>
-                      <Link href="/about" className="text-slate-300 hover:text-white transition-colors">
+                      <Link
+                        href="/about"
+                        className="text-slate-300 hover:text-white transition-colors"
+                      >
                         About Us
                       </Link>
                     </li>
                     <li>
-                      <Link href="/jobs" className="text-slate-300 hover:text-white transition-colors">
+                      <Link
+                        href="/jobs"
+                        className="text-slate-300 hover:text-white transition-colors"
+                      >
                         Careers
                       </Link>
                     </li>
                     <li>
-                      <Link href="/faq" className="text-slate-300 hover:text-white transition-colors">
+                      <Link
+                        href="/faq"
+                        className="text-slate-300 hover:text-white transition-colors"
+                      >
                         FAQ
                       </Link>
                     </li>
@@ -132,21 +174,38 @@ export function Footer() {
                     aria-expanded={legalOpen}
                   >
                     <span>Legal</span>
-                    <ChevronDown className={`w-4 h-4 ml-2 transition-transform duration-200 md:hidden ${legalOpen ? 'rotate-180' : ''}`} />
+                    <ChevronDown
+                      className={`w-4 h-4 ml-2 transition-transform duration-200 md:hidden ${
+                        legalOpen ? "rotate-180" : ""
+                      }`}
+                    />
                   </button>
-                  <ul className={`${legalOpen ? 'block' : 'hidden'} md:block space-y-2`}>
+                  <ul
+                    className={`${
+                      legalOpen ? "block" : "hidden"
+                    } md:block space-y-2`}
+                  >
                     <li>
-                      <Link href="/privacy" className="text-slate-300 hover:text-white transition-colors">
+                      <Link
+                        href="/privacy"
+                        className="text-slate-300 hover:text-white transition-colors"
+                      >
                         Privacy Policy
                       </Link>
                     </li>
                     <li>
-                      <Link href="/terms" className="text-slate-300 hover:text-white transition-colors">
+                      <Link
+                        href="/terms"
+                        className="text-slate-300 hover:text-white transition-colors"
+                      >
                         Terms of Service
                       </Link>
                     </li>
                     <li>
-                      <Link href="/licensing" className="text-slate-300 hover:text-white transition-colors">
+                      <Link
+                        href="/licensing"
+                        className="text-slate-300 hover:text-white transition-colors"
+                      >
                         Licensing
                       </Link>
                     </li>
@@ -159,10 +218,11 @@ export function Footer() {
 
         <div className="border-t border-slate-800 mt-8 pt-8 text-center">
           <p className="text-slate-400">
-            © {currentYear} FIGA LLC. All rights reserved. Licensed and insured caregiving services.
+            © {currentYear} FIGA LLC. All rights reserved. Licensed and insured
+            caregiving services.
           </p>
         </div>
       </div>
     </footer>
-  )
+  );
 }
