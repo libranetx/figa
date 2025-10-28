@@ -43,7 +43,28 @@ export default function AboutPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Form submitted:", formData);
+    // Send form to backend email API
+    (async () => {
+      try {
+        const res = await fetch('/api/contact', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(formData),
+        });
+
+        const body = await res.json();
+        if (!res.ok) throw new Error(body.error || 'Failed to send message');
+
+        // Show success toast and clear form
+        // Import toast dynamically to avoid a top-level dependency here
+        const { toast } = await import('react-hot-toast');
+        toast.success('Message sent — we will get back to you shortly');
+        setFormData({ firstName: '', lastName: '', email: '', phone: '', service: '', message: '' });
+      } catch (err: any) {
+        const { toast } = await import('react-hot-toast');
+        toast.error(err?.message || 'Failed to send message');
+      }
+    })();
     setFormData({
       firstName: "",
       lastName: "",
@@ -178,7 +199,7 @@ export default function AboutPage() {
             <div className="absolute left-2 top-1/2 -translate-y-1/2 z-20 sm:hidden">
               <button
                 onClick={() => scrollByWidth("left")}
-                className="bg-blue-300 p-2 rounded-full shadow-md"
+                className="bg-gray-300 p-2 rounded-full shadow-md"
                 aria-label="Scroll left"
               >
                 <ChevronLeft className="w-5 h-5 text-slate-700" />
@@ -187,7 +208,7 @@ export default function AboutPage() {
             <div className="absolute right-2 top-1/2 -translate-y-1/2 z-20 sm:hidden">
               <button
                 onClick={() => scrollByWidth("right")}
-                className="bg-blue-300 p-2 rounded-full shadow-md"
+                className="bg-gray-300 p-2 rounded-full shadow-md"
                 aria-label="Scroll right"
               >
                 <ChevronRight className="w-5 h-5 text-slate-700" />
@@ -223,7 +244,7 @@ export default function AboutPage() {
             ].map((item, index) => (
               <Card
                 key={index}
-                className="snap-start flex-shrink-0 w-[85%] sm:w-auto bg-white border-0 shadow-md hover:shadow-xl transition-all duration-300 group cursor-pointer"
+                className="snap-start my-5 flex-shrink-0 w-[85%] sm:w-auto bg-white border-0 shadow-md hover:shadow-xl transition-all duration-300 group cursor-pointer"
               >
                 <CardContent className="p-6 text-center">
                   <div
