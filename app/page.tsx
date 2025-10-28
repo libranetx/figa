@@ -375,7 +375,7 @@ export default function HomePage() {
               <div className="absolute left-2 top-1/2 -translate-y-1/2 z-20 md:hidden">
                 <button
                   onClick={() => scrollByWidth("left")}
-                  className="bg-white/90 p-2 rounded-full shadow-md"
+                  className="bg-blue-300 p-2 rounded-full shadow-md"
                   aria-label="Scroll testimonials left"
                 >
                   <ChevronLeft className="w-5 h-5 text-slate-700" />
@@ -384,7 +384,7 @@ export default function HomePage() {
               <div className="absolute right-2 top-1/2 -translate-y-1/2 z-20 md:hidden">
                 <button
                   onClick={() => scrollByWidth("right")}
-                  className="bg-white/90 p-2 rounded-full shadow-md"
+                  className="bg-blue-300 p-2 rounded-full shadow-md"
                   aria-label="Scroll testimonials right"
                 >
                   <ChevronRight className="w-5 h-5 text-slate-700" />
@@ -436,7 +436,7 @@ export default function HomePage() {
                         />
                       ))}
                     </div>
-                    <p className="text-slate-700 mb-6 text-lg leading-relaxed italic">
+                    <p className="text-slate-700 mb-6 text-sm leading-relaxed italic">
                       "{testimonial.content}"
                     </p>
                     <div className="flex items-center">

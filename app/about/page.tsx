@@ -178,7 +178,7 @@ export default function AboutPage() {
             <div className="absolute left-2 top-1/2 -translate-y-1/2 z-20 sm:hidden">
               <button
                 onClick={() => scrollByWidth("left")}
-                className="bg-white/90 p-2 rounded-full shadow-md"
+                className="bg-blue-300 p-2 rounded-full shadow-md"
                 aria-label="Scroll left"
               >
                 <ChevronLeft className="w-5 h-5 text-slate-700" />
@@ -187,7 +187,7 @@ export default function AboutPage() {
             <div className="absolute right-2 top-1/2 -translate-y-1/2 z-20 sm:hidden">
               <button
                 onClick={() => scrollByWidth("right")}
-                className="bg-white/90 p-2 rounded-full shadow-md"
+                className="bg-blue-300 p-2 rounded-full shadow-md"
                 aria-label="Scroll right"
               >
                 <ChevronRight className="w-5 h-5 text-slate-700" />

@@ -373,28 +373,31 @@
   display: none; /* Safari and Chrome */
 }
 
+
+
+
 /* Responsive typography tweaks for small screens */
 @media (max-width: 640px) {
   /* Reduce root font-size so Tailwind rem-based text sizes scale down */
   html {
-    font-size: 14px; /* default 16px -> smaller scale on small devices */
+    font-size: 16px; /* default 16px -> smaller scale on small devices */
   }
 
   /* Slightly tighten hero and section headings for compact layouts */
   h1, h2, h3 {
-    line-height: 1.08;
+    line-height: 1.18;
     letter-spacing: -0.01em;
   }
 
   /* Make badges and small UI text a bit more compact */
   .badge, .btn, .badge * {
-    font-size: 0.85rem;
+    font-size: 0.96rem;
   }
 }
 
 @media (max-width: 380px) {
   /* Further reduce on very small screens */
   html {
-    font-size: 13px;
+    font-size: 14px;
   }
 }
